@@ -1,11 +1,52 @@
 # Agent Intent Guard
 
-An async first-line guard for agentic workflows. It classifies an untrusted user
-request against a developer-defined agent scope before the request reaches the
-agent.
+A modular request gateway that decides whether a request belongs in an agentic
+workflow before the expensive agent starts working on it.
 
-Rego policy generation is included as one example use case. The intent
-classification logic itself is generic and can protect agents with other scopes.
+## Why this exists
+
+Most agent workflows begin by handing an open-ended user request directly to a
+powerful model. By then, the system is already spending tokens and exposing its
+instructions and tools—even when the request has nothing to do with the agent,
+is too ambiguous to handle safely, or is attempting prompt injection.
+
+The philosophy behind this project is simple:
+
+> Decide whether a request belongs at the door, not after it has entered the
+> workflow.
+
+Agent Intent Guard places a small, typed decision layer in front of the agent.
+It answers one bounded question: does this request match the agent's declared
+scope, fall outside it, or attempt to bypass its boundaries? Low-confidence
+decisions are routed to review instead of being treated as permission to act.
+
+This keeps irrelevant and malicious traffic away from expensive downstream
+models, makes routing behavior explicit, and gives application code a stable
+decision contract instead of another block of generated text.
+
+## One guard, many agent scopes
+
+The gateway is intentionally independent of any single agent or domain. An
+agent's purpose, capabilities, boundaries, examples, and confidence threshold
+are data—not hard-coded classification logic. Define a new `AgentScope` and the
+same guard can sit in front of a support agent, coding agent, policy generator,
+research assistant, or another specialized workflow.
+
+```text
+Untrusted request + AgentScope
+              |
+              v
+      Agent Intent Guard
+       /       |       \
+   allow     review    reject
+      |                   |
+      v                   v
+ Agent workflow      Stop before spending
+                     downstream tokens
+```
+
+Rego policy generation is included as one example, but the classification layer
+is reusable: one guard, many agent scopes.
 
 ## Classifications
 
