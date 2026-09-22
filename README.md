@@ -5,16 +5,7 @@ agent scope before the request is handed to the agent.
 
 ## Visual introduction
 
-Open [`intro.html`](intro.html) for the illustrated explanation. GitHub Pages
-deploys it when the page, its assets, or the deployment workflow changes on
-`main`.
-
-For the first deployment, open **Settings → Pages** in GitHub and set **Source**
-to **GitHub Actions**. The configured site URL is:
-
-```text
-https://bhuwan-web.github.io/intent-classification/
-```
+[View the visual introduction](https://bhuwan-web.github.io/intent-classification/).
 
 ## Problem
 
