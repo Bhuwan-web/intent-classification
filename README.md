@@ -1,6 +1,6 @@
-# Agent Intent Guard
+# Agent GateKeeper
 
-A modular request gateway that decides whether a request belongs in an agentic
+A modular request gatekeeper that decides whether a request belongs in an agentic
 workflow before the expensive agent starts working on it.
 
 ## Why this exists
