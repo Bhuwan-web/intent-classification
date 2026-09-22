@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A visual introduction to Agent Intent Guard.">
-  <title>Agent Intent Guard — Visual Guide</title>
+  <meta name="description" content="A visual introduction to Agent Intent Classification.">
+  <title>Agent Intent Classification — Visual Guide</title>
   <style>
     :root {
       color-scheme: dark;
@@ -118,6 +118,54 @@
       opacity: .75;
       z-index: -2;
     }
+
+    .hero-visual {
+      position: absolute;
+      top: 50%;
+      right: clamp(2rem, 8vw, 9rem);
+      z-index: -1;
+      width: min(48vw, 42rem);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: clamp(1rem, 3vw, 2.5rem);
+      transform: translateY(-50%);
+    }
+
+    .request-stack, .label-stack { display: grid; gap: 1rem; }
+
+    .signal, .label-chip {
+      min-height: 4.2rem;
+      padding: 1rem;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      background: rgba(7, 23, 40, .88);
+      box-shadow: 0 15px 45px rgba(0,0,0,.3);
+      font-weight: 850;
+      text-align: center;
+    }
+
+    .signal { color: var(--muted); }
+    .classifier-core {
+      display: grid;
+      width: clamp(7rem, 12vw, 11rem);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 2px solid var(--cyan);
+      border-radius: 2rem;
+      color: var(--cyan);
+      background: rgba(5, 30, 48, .92);
+      box-shadow: 0 0 80px rgba(56, 219, 243, .32), inset 0 0 35px rgba(56, 219, 243, .12);
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 900;
+    }
+
+    .label-chip { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: clamp(.65rem, 1.25vw, .9rem); }
+    .label-chip.valid { color: var(--green); }
+    .label-chip.scope { color: var(--amber); }
+    .label-chip.injection { color: var(--red); }
 
     .hero::after {
       content: "";
@@ -242,6 +290,41 @@
       height: auto;
     }
 
+    .scope-visual {
+      min-height: clamp(28rem, 58vw, 42rem);
+      padding: clamp(1.2rem, 4vw, 4rem);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: clamp(1rem, 4vw, 4rem);
+      background:
+        radial-gradient(circle at center, rgba(56, 219, 243, .18), transparent 28%),
+        linear-gradient(145deg, #07182a, #020914);
+    }
+
+    .scope-inputs { display: grid; gap: 1rem; }
+    .scope-inputs span {
+      padding: clamp(.8rem, 2vw, 1.4rem);
+      border: 1px solid var(--line);
+      border-radius: 1rem;
+      color: #cfdae8;
+      background: rgba(255,255,255,.035);
+      font-size: clamp(.8rem, 1.7vw, 1.25rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .scope-output {
+      display: grid;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: clamp(.9rem, 2vw, 1.3rem);
+      font-weight: 750;
+    }
+
+    .scope-output strong { color: var(--ink); font-size: clamp(1.3rem, 3vw, 2.2rem); }
+
     .picture-caption {
       display: flex;
       justify-content: space-between;
@@ -328,14 +411,14 @@
       font-size: clamp(.95rem, 1.5vw, 1.15rem);
     }
 
-    .routes {
+    .classifications {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       margin-top: clamp(2rem, 6vw, 4rem);
     }
 
-    .route {
+    .classification {
       min-height: 24rem;
       padding: 2rem;
       display: flex;
@@ -346,7 +429,7 @@
       background: linear-gradient(145deg, rgba(15, 35, 57, .9), rgba(4, 12, 24, .94));
     }
 
-    .route-icon {
+    .classification-icon {
       display: grid;
       width: 7rem;
       height: 7rem;
@@ -357,16 +440,56 @@
       box-shadow: 0 0 60px currentColor;
     }
 
-    .route h3 {
+    .classification h3 {
       margin: 0 0 .4rem;
       font-size: clamp(2rem, 4vw, 3.6rem);
       letter-spacing: -.05em;
     }
 
-    .route p { margin: 0; color: var(--muted); }
-    .allow { color: var(--green); }
-    .review { color: var(--amber); }
-    .reject { color: var(--red); }
+    .classification p { margin: 0; color: var(--muted); }
+    .valid-request { color: var(--green); }
+    .out-of-scope { color: var(--amber); }
+    .prompt-injection { color: var(--red); }
+
+    .flag-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: clamp(2rem, 6vw, 4rem);
+    }
+
+    .flag-card {
+      min-height: 22rem;
+      padding: clamp(1.5rem, 4vw, 3rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 2rem;
+      background: var(--panel);
+    }
+
+    .flag-card code {
+      color: var(--cyan);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(1.4rem, 3.5vw, 3rem);
+      font-weight: 800;
+    }
+
+    .formula {
+      color: #dce7f2;
+      font-size: clamp(1.05rem, 2.2vw, 1.6rem);
+      line-height: 1.5;
+    }
+
+    .not-a-label {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-weight: 750;
+      letter-spacing: .08em;
+      text-align: center;
+      text-transform: uppercase;
+    }
 
     .boundary-grid {
       display: grid;
@@ -469,8 +592,12 @@
       .versus { display: none; }
       .journey { grid-template-columns: repeat(2, 1fr); }
       .step:nth-child(2)::after { display: none; }
-      .routes { grid-template-columns: 1fr; }
-      .route { min-height: 17rem; }
+      .classifications { grid-template-columns: 1fr; }
+      .classification { min-height: 17rem; }
+      .hero-visual { opacity: .42; width: 85vw; right: -20vw; }
+      .scope-visual { grid-template-columns: 1fr; }
+      .scope-output { text-align: center; }
+      .flag-grid { grid-template-columns: 1fr; }
       .nav-dots { display: none; }
       .hero::after { background: linear-gradient(0deg, #020812 4%, rgba(2,8,18,.82) 60%, rgba(2,8,18,.25)); }
       .hero-image { object-position: 58% center; opacity: .52; }
@@ -499,37 +626,49 @@
     <a href="#problem" aria-label="The problem"></a>
     <a href="#scope" aria-label="Agent scope"></a>
     <a href="#journey" aria-label="Request journey"></a>
-    <a href="#routes" aria-label="Routing outcomes"></a>
+    <a href="#classifications" aria-label="Three classifications"></a>
+    <a href="#flags" aria-label="Computed flags"></a>
     <a href="#limits" aria-label="System boundaries"></a>
     <a href="#start" aria-label="Get started"></a>
   </nav>
 
   <main>
     <section class="slide hero" id="door" data-section>
-      <img class="hero-image" src="assets/agentic-ai-gatekeeper-linkedin.png" alt="Requests flowing through a three-way gate before reaching an AI agent.">
+      <div class="hero-visual" aria-hidden="true">
+        <div class="request-stack">
+          <div class="signal">REQUEST</div>
+          <div class="signal">SCOPE</div>
+        </div>
+        <div class="classifier-core">3</div>
+        <div class="label-stack">
+          <div class="label-chip valid">valid_request</div>
+          <div class="label-chip scope">out_of_scope</div>
+          <div class="label-chip injection">prompt_injection</div>
+        </div>
+      </div>
       <div class="wrap hero-copy reveal">
-        <p class="eyebrow">Agent Intent Guard</p>
-        <h1>Decide at the <span class="accent">door.</span></h1>
-        <p class="lead">Before the powerful agent sees the request.</p>
+        <p class="eyebrow">Agent Intent Classification</p>
+        <h1>Know what the request <span class="accent">is.</span></h1>
+        <p class="lead">One request. One scope. One of three labels.</p>
         <a class="scroll-cue" href="#problem"><span>↓</span> Follow one request</a>
       </div>
     </section>
 
     <section class="slide" id="problem" data-section>
       <div class="wrap reveal">
-        <p class="eyebrow">The philosophy</p>
-        <h2>Guard first.<br>Act second.</h2>
+        <p class="eyebrow">Problem</p>
+        <h2>Free text is not a contract.</h2>
         <div class="before-after">
           <article class="world before">
-            <small>Without the guard</small>
-            <strong>Every request enters.</strong>
-            <div class="mini-flow"><span class="node">User</span><span class="arrow">→</span><span class="node">Powerful agent</span></div>
+            <small>Before classification</small>
+            <strong>Unknown intent.</strong>
+            <div class="mini-flow"><span class="node">User text</span><span class="arrow">→</span><span class="node">?</span></div>
           </article>
           <div class="versus">VS</div>
           <article class="world after">
-            <small>With the guard</small>
-            <strong>Only suitable requests enter.</strong>
-            <div class="mini-flow"><span class="node">User</span><span class="arrow">→</span><span class="node">Guard</span><span class="arrow">→</span><span class="node">Agent</span></div>
+            <small>After classification</small>
+            <strong>Typed result.</strong>
+            <div class="mini-flow"><span class="node">User text</span><span class="arrow">→</span><span class="node">One label</span></div>
           </article>
         </div>
       </div>
@@ -537,11 +676,20 @@
 
     <section class="slide picture-stage" id="scope" data-section>
       <div class="wrap reveal">
-        <p class="eyebrow">One guard, many agents</p>
+        <p class="eyebrow">Solution</p>
         <h2>Scope is data.</h2>
         <div class="picture-card">
-          <img src="assets/agentic-ai-gatekeeper-linkedin-v2.png" alt="Purpose, capabilities, boundaries, examples, and confidence feed one gatekeeper, which can allow, review, or reject.">
-          <div class="picture-caption"><span>Configure the boundary</span><span>Reuse the guard</span></div>
+          <div class="scope-visual" role="img" aria-label="Purpose, capabilities, boundaries, and examples form an agent scope that is compared with a user request to produce a classification.">
+            <div class="scope-inputs">
+              <span>Purpose</span>
+              <span>Capabilities</span>
+              <span>Boundaries</span>
+              <span>Valid examples</span>
+            </div>
+            <div class="classifier-core">＋</div>
+            <div class="scope-output"><span>User request</span><strong>→ Classification</strong></div>
+          </div>
+          <div class="picture-caption"><span>Describe the agent</span><span>Classify the request</span></div>
         </div>
       </div>
     </section>
@@ -549,7 +697,7 @@
     <section class="slide" id="journey" data-section>
       <div class="wrap reveal">
         <p class="eyebrow">One request, end to end</p>
-        <h2>From words to a decision.</h2>
+        <h2>From words to one label.</h2>
         <div class="request">“Write a Rego policy that blocks Nepali subdomains.”</div>
         <div class="journey">
           <article class="step">
@@ -570,52 +718,70 @@
           <article class="step">
             <span class="step-number">04</span>
             <svg class="step-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-            <div><h3>Route</h3><p>Local threshold</p></div>
+            <div><h3>Return</h3><p>Typed result</p></div>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="slide" id="routes" data-section>
+    <section class="slide" id="classifications" data-section>
       <div class="wrap reveal">
-        <p class="eyebrow">The entire decision contract</p>
-        <h2>Three exits.</h2>
-        <div class="routes">
-          <article class="route allow">
-            <div class="route-icon">✓</div>
-            <div><h3>Allow</h3><p>Valid + confident</p></div>
+        <p class="eyebrow">The canonical result</p>
+        <h2>Exactly three labels.</h2>
+        <div class="classifications">
+          <article class="classification valid-request">
+            <div class="classification-icon">V</div>
+            <div><h3>valid_request</h3><p>Matches the declared scope</p></div>
           </article>
-          <article class="route review">
-            <div class="route-icon">?</div>
-            <div><h3>Review</h3><p>Any low confidence</p></div>
+          <article class="classification out-of-scope">
+            <div class="classification-icon">O</div>
+            <div><h3>out_of_scope</h3><p>Does not belong to this agent</p></div>
           </article>
-          <article class="route reject">
-            <div class="route-icon">×</div>
-            <div><h3>Reject</h3><p>Injection or out of scope</p></div>
+          <article class="classification prompt-injection">
+            <div class="classification-icon">!</div>
+            <div><h3>prompt_injection</h3><p>Attempts to bypass instructions</p></div>
           </article>
         </div>
+      </div>
+    </section>
+
+    <section class="slide" id="flags" data-section>
+      <div class="wrap reveal">
+        <p class="eyebrow">Computed conveniences</p>
+        <h2>Flags are not labels.</h2>
+        <div class="flag-grid">
+          <article class="flag-card">
+            <code>allowed</code>
+            <div class="formula">valid_request<br>＋ enough confidence</div>
+          </article>
+          <article class="flag-card">
+            <code>requires_review</code>
+            <div class="formula">confidence<br>below threshold</div>
+          </article>
+        </div>
+        <p class="not-a-label">No reject field · no action is performed</p>
       </div>
     </section>
 
     <section class="slide" id="limits" data-section>
       <div class="wrap reveal">
-        <p class="eyebrow">The boundary</p>
-        <h2>A gate—not the whole fortress.</h2>
+        <p class="eyebrow">Schema changes</p>
+        <h2>No database. No migration.</h2>
         <div class="boundary-grid">
           <article class="boundary-card">
             <h3>This repo does</h3>
             <div class="big-list">
               <div class="yes">Validate inputs</div>
               <div class="yes">Classify intent</div>
-              <div class="yes">Return a typed decision</div>
+              <div class="yes">Return typed data</div>
             </div>
           </article>
           <article class="boundary-card">
-            <h3>Your app still owns</h3>
+            <h3>This repo does not</h3>
             <div class="big-list">
-              <div class="no">The real agent</div>
-              <div class="no">The review queue</div>
-              <div class="no">Enforcement</div>
+              <div class="no">Run the agent</div>
+              <div class="no">Reject requests</div>
+              <div class="no">Choose the next action</div>
             </div>
           </article>
         </div>
@@ -625,8 +791,8 @@
     <section class="slide finale" id="start" data-section>
       <div class="wrap reveal">
         <p class="eyebrow">Integration</p>
-        <h2>Define scope. Classify. Route.</h2>
-        <p class="lead" style="margin-inline:auto">Change the scope—not the guard—for every new agent.</p>
+        <h2>Define scope. Classify. Inspect.</h2>
+        <p class="lead" style="margin-inline:auto">Your application decides what happens next.</p>
         <div class="code-pill">uv run python -m examples.policy_requests</div>
       </div>
     </section>

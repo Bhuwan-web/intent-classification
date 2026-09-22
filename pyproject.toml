@@ -1,7 +1,7 @@
 [project]
 name = "jev-test"
 version = "0.1.0"
-description = "Add your description here"
+description = "Typed intent classification for scoped agent requests"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

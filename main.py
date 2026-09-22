@@ -83,7 +83,7 @@ class IntentSystemOneResponse(SystemOneResponse):
 
 
 class IntentDecision(BaseModel):
-    """Validated classification result and application routing decision."""
+    """Validated classification result with locally computed convenience flags."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

@@ -1,123 +1,96 @@
-# Agent GateKeeper
+# Agent Intent Classification
 
-A modular request gatekeeper that decides whether a request belongs in an agentic
-workflow before the expensive agent starts working on it.
+A small, typed classifier that compares an untrusted request with a declared
+agent scope before the request is handed to the agent.
 
 ## Visual introduction
 
-The illustrated introduction lives in [`intro.html`](intro.html). It is deployed
-to GitHub Pages automatically whenever the page, its assets, or the deployment
-workflow changes on `main`.
+Open [`intro.html`](intro.html) for the illustrated explanation. GitHub Pages
+deploys it when the page, its assets, or the deployment workflow changes on
+`main`.
 
-To enable the first deployment, open **Settings → Pages** in GitHub and set
-**Source** to **GitHub Actions**. The published site will be available at:
+For the first deployment, open **Settings → Pages** in GitHub and set **Source**
+to **GitHub Actions**. The configured site URL is:
 
 ```text
 https://bhuwan-web.github.io/intent-classification/
 ```
 
-## Why this exists
+## Problem
 
-Most agent workflows begin by handing an open-ended user request directly to a
-powerful model. By then, the system is already spending tokens and exposing its
-instructions and tools—even when the request has nothing to do with the agent,
-is too ambiguous to handle safely, or is attempting prompt injection.
+An agent should receive requests that match its purpose. Application code,
+however, needs a predictable value to distinguish a matching request from an
+unrelated request or an attempt to override the agent's instructions.
 
-The philosophy behind this project is simple:
+This project supplies that value. It does not execute the downstream agent,
+reject a request, or send a request to human review. Those actions belong to the
+application that consumes the classification.
 
-> Decide whether a request belongs at the door, not after it has entered the
-> workflow.
+## Solution
 
-Agent Intent Guard places a small, typed decision layer in front of the agent.
-It answers one bounded question: does this request match the agent's declared
-scope, fall outside it, or attempt to bypass its boundaries? Low-confidence
-decisions are routed to review instead of being treated as permission to act.
+The caller provides two things:
 
-This keeps irrelevant and malicious traffic away from expensive downstream
-models, makes routing behavior explicit, and gives application code a stable
-decision contract instead of another block of generated text.
+1. The untrusted user request.
+2. An `AgentScope` describing the agent's purpose, capabilities, boundaries,
+   valid examples, and confidence threshold.
 
-## One guard, many agent scopes
+The classifier sends the request and the descriptive parts of the scope to the
+TypeSafe `system_one` API. It returns one of exactly three classifications:
 
-The gateway is intentionally independent of any single agent or domain. An
-agent's purpose, capabilities, boundaries, examples, and confidence threshold
-are data—not hard-coded classification logic. Define a new `AgentScope` and the
-same guard can sit in front of a support agent, coding agent, policy generator,
-research assistant, or another specialized workflow.
+- `valid_request`: the request matches the purpose and capabilities and violates
+  no boundary.
+- `out_of_scope`: the request is not prompt injection, but falls outside the
+  scope or violates a boundary.
+- `prompt_injection`: the request tries to override, reveal, replace, or bypass
+  the agent's instructions or safeguards.
 
 ```text
-Untrusted request + AgentScope
-              |
-              v
-      Agent Intent Guard
-       /       |       \
-   allow     review    reject
-      |                   |
-      v                   v
- Agent workflow      Stop before spending
-                     downstream tokens
+user request + agent scope
+            |
+            v
+    classify_intent(...)
+            |
+            v
+ valid_request | out_of_scope | prompt_injection
 ```
 
-Rego policy generation is included as one example, but the classification layer
-is reusable: one guard, many agent scopes.
+The result also contains the selected label's confidence, the probability map,
+and the configured minimum confidence.
 
-## Classifications
+### Classification versus computed flags
 
-- `valid_request`: The request matches the agent's purpose and capabilities and
-  violates no boundary.
-- `prompt_injection`: The request attempts to override, reveal, replace, or bypass
-  the agent's instructions or safeguards.
-- `out_of_scope`: The request is not prompt injection, but it does not belong to
-  the configured agent scope or violates a boundary.
+`classification` is the canonical model result. `allowed` and
+`requires_review` are computed convenience fields; they are not additional
+classifications or evidence that the application routed the request anywhere.
 
-A valid classification is allowed only when it also meets the scope's configured
-confidence threshold. Any low-confidence result is marked for review instead of
-being acted on automatically.
+```text
+allowed =
+    classification == valid_request
+    AND confidence >= minimum_confidence
 
-## Project structure
-
-- `main.py` contains the reusable Pydantic request, response, and decision models
-  plus the async classification API.
-- `examples/policy_requests.py` defines a Rego policy agent scope and demonstrates
-  all three request classifications.
-
-## Setup
-
-This project requires Python 3.12 or later and uses
-[uv](https://docs.astral.sh/uv/) for dependency management.
-
-```bash
-uv sync
+requires_review =
+    confidence < minimum_confidence
 ```
 
-Provide your TypeSafe API key through the environment:
+There is no `reject` field. A caller may choose what to do with an
+`out_of_scope` or `prompt_injection` result, but that behavior is outside this
+repository.
 
-```bash
-export TYPESAFE_API_KEY="your-api-key"
+### One concrete request
+
+The example declares a Rego policy agent and submits:
+
+```text
+Write a Rego policy that blocks Nepali subdomains using input.host.
 ```
 
-The example also loads variables from a local `.env` file when one is present.
+Pydantic first validates the request and scope. `classify_intent` then asks
+TypeSafe to select one of the three labels. Finally, the returned SDK data is
+validated as an `IntentDecision`. The example prints the expected label, actual
+label, confidence, probabilities, and the two computed flags. It does not
+generate or execute a Rego policy.
 
-## Run the Rego policy example
-
-```bash
-uv run python -m examples.policy_requests
-```
-
-The example evaluates:
-
-- A valid request to generate a Rego policy.
-- A prompt-injection attempt.
-- A benign request outside the Rego agent's scope.
-
-For each request it prints the expected and actual classification, whether the
-request is allowed, whether it requires review, and the model confidence and
-probabilities.
-
-## Use with another agent
-
-Define an `AgentScope`, then pass it and the untrusted request to
-`classify_intent`:
+### Use it with another agent
 
 ```python
 import asyncio
@@ -127,51 +100,73 @@ from typesafe_sdk import AsyncTypeSafeClient
 from main import AgentScope, IntentClassificationRequest, classify_intent
 
 
-SUPPORT_AGENT_SCOPE = AgentScope(
+SUPPORT_SCOPE = AgentScope(
     name="Customer support agent",
-    purpose="Answer questions about customer accounts and product usage.",
-    allowed_capabilities=(
-        "Explain product features.",
-        "Help troubleshoot account issues.",
-    ),
-    boundaries=(
-        "Do not change account data.",
-        "Do not reveal credentials or private customer information.",
-    ),
-    valid_examples=(
-        "Help me reset my account preferences.",
-    ),
+    purpose="Answer questions about product usage.",
+    allowed_capabilities=("Explain product features.",),
+    boundaries=("Do not change account data.",),
+    valid_examples=("How do I change my notification settings?",),
     minimum_confidence=0.8,
 )
 
 
 async def run() -> None:
     async with AsyncTypeSafeClient() as client:
-        request = IntentClassificationRequest(
-            user_request="How do I change my notification settings?",
-            agent_scope=SUPPORT_AGENT_SCOPE,
-        )
-        decision = await classify_intent(
+        result = await classify_intent(
             client,
-            request=request,
+            request=IntentClassificationRequest(
+                user_request="How do I change my notification settings?",
+                agent_scope=SUPPORT_SCOPE,
+            ),
         )
 
-        if decision.allowed:
-            print("Route to the support agent")
-        elif decision.requires_review:
-            print("Route to human review")
-        else:
-            print(f"Reject request: {decision.classification}")
+        print(result.classification)
+        print(result.confidence)
+        print(result.probabilities)
 
 
 asyncio.run(run())
 ```
 
-The implementation follows the
-[TypeSafe Python SDK async usage](https://docs.typesafe.ai/sdk/python/usage)
-pattern: use `AsyncTypeSafeClient` as an async context manager and await
-`system_one` through `classify_intent`.
+The consuming application—not `classify_intent`—decides what happens after
+these values are returned.
 
-`AgentScope` and `IntentClassificationRequest` reject missing, empty, or unknown
-fields before an API call is made. The SDK response is parsed through a typed
-`SystemOneResponse` subclass, and `IntentDecision` validates the final routing data.
+## Schema changes
+
+There is no database or durable storage, so there are no migrations or resets.
+The current in-memory and wire contracts are:
+
+- `AgentScope`: `name`, `purpose`, one or more `allowed_capabilities`, optional
+  `boundaries`, optional `valid_examples`, and `minimum_confidence` from 0 to 1.
+- `IntentClassificationRequest`: a non-empty `user_request` and an `AgentScope`.
+- TypeSafe request state: `user_request` plus the descriptive scope fields.
+  `minimum_confidence` is deliberately excluded because it is applied locally.
+- TypeSafe response: an `intent` choice with a label, confidence, and
+  probabilities.
+- `IntentDecision`: `classification`, `confidence`, `probabilities`, and
+  `minimum_confidence`, plus computed `allowed` and `requires_review` fields.
+
+The input and decision models reject unknown fields and are frozen after
+creation. There is no compatibility cutover or intentional data loss.
+
+## Project structure
+
+- `main.py`: reusable Pydantic models and async classification function.
+- `examples/policy_requests.py`: Rego-oriented scope and three sample requests.
+- `intro.html`: visual, standalone explanation.
+
+## Setup and run
+
+Python 3.12 or later and [uv](https://docs.astral.sh/uv/) are required.
+
+```bash
+uv sync
+export TYPESAFE_API_KEY="your-api-key"
+uv run python -m examples.policy_requests
+```
+
+The example also reads a local `.env` file. It catches `TypeSafeAPIError` and
+prints the HTTP status and request ID; other validation and runtime errors
+propagate to the caller.
+
+Users should now see one precise classification rather than an implied routing lifecycle.
