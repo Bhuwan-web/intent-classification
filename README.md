@@ -3,6 +3,19 @@
 A modular request gatekeeper that decides whether a request belongs in an agentic
 workflow before the expensive agent starts working on it.
 
+## Visual introduction
+
+The illustrated introduction lives in [`intro.html`](intro.html). It is deployed
+to GitHub Pages automatically whenever the page, its assets, or the deployment
+workflow changes on `main`.
+
+To enable the first deployment, open **Settings → Pages** in GitHub and set
+**Source** to **GitHub Actions**. The published site will be available at:
+
+```text
+https://bhuwan-web.github.io/intent-classification/
+```
+
 ## Why this exists
 
 Most agent workflows begin by handing an open-ended user request directly to a
